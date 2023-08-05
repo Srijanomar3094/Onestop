@@ -6,7 +6,7 @@ from .models import Inventory, Product, Buy, Cart
 from datetime import datetime
 
 
-#################################################################################
+#############################################
     
 
 def register(request):
