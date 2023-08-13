@@ -10,7 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
+
 import os
+#os.environ['HTTPS'] = "on"
+
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,11 +26,21 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'ivbx3n$bl(5$*ef-##=inl8j2qc_iu+gn_axalq&(y1tq6dwx5'
 
+
+
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','192.168.61.33']
-CORS_ORIGIN_ALLOW_ALL = True
+ALLOWED_HOSTS = ['*']
+SECURE_SSL_REDIRECT = True
+#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)
+
+SESSION_ENGINE = "django.contribxx.sessions.backends.signed_cookies"
+
 
 
 # Application definition
@@ -40,22 +54,34 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'grocery',
     'inventory',
-    'knox',
     'corsheaders',
+    'sslserver',
 ]
 
+
+
+
 MIDDLEWARE = [
+    'django_cookies_samesite.middleware.CookiesSameSite',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-   # 'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    
+    
+    
 ]
 
+
+
+
 ROOT_URLCONF = 'grocery.urls'
+
+# AUTH_USER_MODEL='grocery.User'
 
 TEMPLATES = [
     {
@@ -87,8 +113,13 @@ DATABASES = {
 'PASSWORD': 'Srijan@3094',
 'HOST':'localhost',
 'PORT':'3306',
+
 }
 }
+# AUTHENTICATION_BACKENDS = [ 
+#     'django.contrib.auth.backends.ModelBackend',
+
+# ]
 
 
 # Password validation
@@ -127,8 +158,55 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
+# STATIC_URL = '/static/'
+
+
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/media/'
+
+# SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SAMESITE = 'None'
+# SESSION_COOKIE_HTTPONLY = False
+
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/2.0/howto/static-files/
+
 STATIC_URL = '/static/'
 
+CORS_ORIGIN_ALLOW_ALL = True
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+CORS_ALLOW_CREDENTIALS = True
+
 MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR,'media/')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+    '/var/www/static/',
+]
+#ENABLE_HTTPS: True
+SESSION_COOKIE_SECURE = True
+DCS_SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_HTTPONLY = True
+
+
+
+
+
+
+##############################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+

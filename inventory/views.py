@@ -4,6 +4,7 @@ import json
 from django.contrib.auth.models import User
 from .models import Inventory, Product, Buy, Cart 
 from datetime import datetime
+from django.http import HttpResponse
 
 
 #############################################
@@ -38,6 +39,10 @@ def register(request):
     
 
 
+  
+    
+
+
    
 
 
@@ -47,6 +52,7 @@ def register(request):
 
 
 
+    
 def login_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -61,10 +67,13 @@ def login_view(request):
                 if auth_user.is_superuser and auth_user.is_staff:
                     return JsonResponse({'login': 'admin', 'message': 'Login successful.'})
                 else:
-                    return JsonResponse({'login':'user','message': 'Login successful.'})
-        
-        # If the user does not exist or the password is incorrect
-        return JsonResponse({'error': 'Invalid login credentials.'}, status=401)
+                    response = JsonResponse({'login': 'user', 'message': 'Login successful.'})
+                    
+                    if request.is_secure():
+                       response.set_cookie('sessionid', 'your_session_id', secure=True)
+                    return response
+    
+
 
    
 
@@ -77,17 +86,15 @@ def login_view(request):
 
 def inventory(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        category = data.get('category')
-       # image = request.FILES.get('image')
-        inventory = Inventory.objects.create(category=category)
+        category = request.POST.get('category')
+        image = request.FILES.get('blob')
+
+        inventory = Inventory.objects.create(category=category, blob=image)
         inventory.save()
 
-        return JsonResponse({'message': 'Category created successfully'})
+        return JsonResponse({'message': 'Category and image uploaded successfully'})
 
  
-
-
     if request.method == 'GET':
         if request.user.is_authenticated:
             categories = Inventory.objects.all()
@@ -96,7 +103,7 @@ def inventory(request):
                 {
                     'id': category.id,
                     'product': category.category,
-                   # 'image': product.blob,
+                    'image_url': request.build_absolute_uri(category.blob.url)  # Construct the image URL
                 }
                 for category in categories
             ]
@@ -104,7 +111,6 @@ def inventory(request):
             return JsonResponse({'categories': category_data}, status=200)
         else:
             return JsonResponse({'error': 'Authentication required.'}, status=401)
-        
 
 
 
@@ -137,6 +143,8 @@ def inventory(request):
     return JsonResponse({'message': 'Invalid request method.'}, status=400)
 
 
+
+    
 
 
 
@@ -360,6 +368,21 @@ def search(request):
         return JsonResponse({'message': 'Invalid request method'}, status=400)
 
 
+#################################################################################################3
+
+
+
+def inventory_image_upload(request):
+    if request.method == 'POST':
+        category = request.POST.get('category')
+        image = request.FILES.get('blob')
+
+        if category and image:
+            inventory = Inventory(category=category, blob=image)
+            inventory.save()
+            return JsonResponse({"message": "Image uploaded successfully."}, status=201)
+        else:
+            return JsonResponse({"message": "Missing category or image data."}, status=400)
 
 
 
