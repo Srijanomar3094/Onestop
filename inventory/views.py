@@ -72,6 +72,8 @@ def login_view(request):
                     if request.is_secure():
                        response.set_cookie('sessionid', 'your_session_id', secure=True)
                     return response
+    else:
+        return JsonResponse("request not valid")
     
 
 
@@ -87,58 +89,87 @@ def login_view(request):
 def inventory(request):
     if request.method == 'POST':
         category = request.POST.get('category')
-        image = request.FILES.get('blob')
-
-        inventory = Inventory.objects.create(category=category, blob=image)
-        inventory.save()
-
-        return JsonResponse({'message': 'Category and image uploaded successfully'})
-
- 
-    if request.method == 'GET':
-        if request.user.is_authenticated:
-            categories = Inventory.objects.all()
-
-            category_data = [
-                {
-                    'id': category.id,
-                    'product': category.category,
-                    'image_url': request.build_absolute_uri(category.blob.url)  # Construct the image URL
-                }
-                for category in categories
-            ]
-
-            return JsonResponse({'categories': category_data}, status=200)
-        else:
-            return JsonResponse({'error': 'Authentication required.'}, status=401)
-
-
-
-    if request.method == 'PUT':
-        category_id = request.POST.get('category_id')
-        category = request.POST.get('category')
         image = request.FILES.get('image')
+        uid = request.POST.get('uid')
+        ucategory = request.POST.get('ucategory')
+        uimage = request.FILES.get('uimage')
+        if category and image:
+         inventory = Inventory.objects.create(category=category, blob=image)
+         inventory.save()
+         return JsonResponse({'message': 'Category and image uploaded successfully'})
+        if uid:
+            inventory=Inventory.objects.filter(id=uid).first()
 
-        inventory = Inventory.objects.get(id=category_id)
-        inventory.category = category
+            if inventory:
+             inventory.category = ucategory
 
-        if image:
-            inventory.blob = image
+            if uimage:
+                inventory.blob = uimage
 
-        inventory.save()
+            inventory.save()
+            return JsonResponse({'message': 'Category updated successfully'})
+        else:
+            return JsonResponse({'category_id':category_id,'error': 'Inventory item not found'}, status=404)
 
 
-        return JsonResponse({'message': 'Category updated successfully'})
+
+       
+
+    if request.method == 'GET':
+            if request.user.is_authenticated:
+                categories = Inventory.objects.exclude(deletedTime__isnull=False)
+
+                category_data = [
+                    {
+                        'id': category.id,
+                        'product': category.category,
+                        'image': category.blob.url if category.blob else None,
+                    }
+                    for category in categories
+                ]
+
+                return JsonResponse({'categories': category_data}, status=200)
+            else:
+                return JsonResponse({'error': 'Authentication required.'}, status=401)
+      
 
 
 
-    elif request.method == 'DELETE':
-         category_id = request.DELETE.get('category_id')
-         inventory = Inventory.objects.filter(id=category_id).first()
-         inventory.deletedTime = datetime.now()
-         inventory.delete()
-         return JsonResponse({'message': 'Category deleted successfully'})
+    # if request.method == 'PUT':
+    #     data = json.loads(request.body)
+    #     uid = data['ucategory_id']
+    #     ucategory = data['ucategory']
+    #     uimage = data['uimage']
+    #     inventory=Inventory.objects.filter(id=id).first()
 
+    #     if inventory:
+    #         inventory.category = category
+
+    #         if image:
+    #             inventory.blob = image
+
+    #         inventory.save()
+    #         return JsonResponse({'message': 'Category updated successfully'})
+    #     else:
+    #         return JsonResponse({'category_id':category_id,'error': 'Inventory item not found'}, status=404)
+
+    
+
+
+    if request.method == 'DELETE':
+        category_id = request.GET.get('category_id')
+        
+        if category_id is not None:
+            inventory = Inventory.objects.filter(id=category_id).first()
+            
+            if inventory:
+                inventory.deletedTime = datetime.now()
+                inventory.save()
+                return JsonResponse({'message': 'Category deleted successfully'})
+            else:
+                return JsonResponse({'message': 'Category not found'}, status=404)
+        else:
+            return JsonResponse({'message': 'Invalid request data.'}, status=400)
 
     return JsonResponse({'message': 'Invalid request method.'}, status=400)
 
@@ -148,37 +179,68 @@ def inventory(request):
 
 
 
-########################################################################################
+######################################################################################
+
 
 
 def product(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        product_name = data.get('productname')
-        price = data.get('price')
-        category_id = data.get('categoryid')
-        quantity = data.get('quantity')
+        product_name = request.POST.get('productname')
+        price = request.POST.get('price')
+        category_id = request.POST.get('categoryid')
+        quantity = request.POST.get('quantity')
         image = request.FILES.get('image')
-        category = Inventory.objects.filter(id=category_id).first()
-        if category:
-            category_name = category.category
-            product = Product.objects.create(product=product_name, price=price, category=category, blob=image,quantity=quantity)
-            product.save()
+        uproduct_id = request.POST.get('uproduct_id')
+        uname = request.POST.get('uname')
+        uprice = request.POST.get('uprice')
+        uimage = request.FILES.get('uimage')
+        uquantity = request.POST.get('uquantity')
+        uproduct = request.POST.get('uproduct')
 
-        return JsonResponse({'message': 'Registered Product successfully'})
+        category = Inventory.objects.filter(id=category_id).first()
+
+        if category:
+            new_product = Product.objects.create(
+                product=product_name,
+                price=price,
+                category=category,
+                blob=image,
+                quantity=quantity
+            )
+            return JsonResponse({'message': 'Registered Product successfully'})
+
+        existing_product = Product.objects.filter(id=uproduct_id).first()
+
+        if not existing_product:
+            return JsonResponse({'message': 'Product does not exist'}, status=404)
+
+        if uname:
+            existing_product.product = uname
+        if uprice:
+            existing_product.price = float(uprice)
+        if uquantity:
+            existing_product.quantity = int(uquantity)
+        if uimage:
+            existing_product.blob = uimage
+        if uproduct:
+            existing_product.product = uproduct
+
+        existing_product.save()
+
+        return JsonResponse({'message': 'Updated the product successfully'})
     
 
 
 
     if request.method == 'GET':
         if request.user.is_authenticated:
-            products = Product.objects.all()
+            products = Product.objects.exclude(deletedTime__isnull=False)
 
             product_data = [
                 {
                     'id': product.id,
                     'product': product.product,
-                   # 'image': product.blob,
+                    'image': product.blob.url if product.blob else None,
                 }
                 for product in products
             ]
@@ -189,35 +251,30 @@ def product(request):
         
 
 
-    if request.method == 'PUT':
-     product_id = request.POST.get('product_id')
-     uname = request.POST.get('uname')
-     uprice = request.POST.get('uprice')
-     uimage = request.FILES.get('image')
-     uquantity = request.POST.get('uquantity')
+    # if request.method == 'PUT':
+    #     product_id = request.POST.get('product_id')
+    #     uname = request.POST.get('uname')
+    #     uprice = request.POST.get('uprice')
+    #     uimage = request.FILES.get('image')
+    #     uquantity = request.POST.get('uquantity')
 
-     product = Product.objects.filter(id=product_id).first()
-     if not product:
-        return JsonResponse({'product_id': product_id, 'message': 'Product does not exist'}, status=404)
+    #     product = Product.objects.filter(id=product_id).first()
+    #     if not product:
+    #         return JsonResponse({'product_id': product_id,'uprice': uprice, 'message': 'Product does not exist'}, status=404)
 
-     if uname:
-        product.product = uname
-     if uprice:
-        product.price = float(uprice)
-     if uquantity:
-        product.quantity = int(uquantity)
+    #     if uname:
+    #         product.product = uname
+    #     if uprice:
+    #         product.price = float(uprice)
+    #     if uquantity:
+    #         product.quantity = int(uquantity)
 
-    # if uimage:
-    #     fs = FileSystemStorage()
-    #     try:
-    #         fs.save(uimage.name, uimage)
-    #         product.blob = fs.url(uimage.name)
-    #     except ValidationError:
-    #         return JsonResponse({'product_id': product_id, 'message': 'Invalid image format'}, status=400)
+    #     if uimage:
+    #         product.blob = uimage
 
-     product.save()
+    #     product.save()
 
-     return JsonResponse({'product_id': product_id, 'message': 'Updated the product successfully'})
+    #     return JsonResponse({'product_id': product_id, 'message': 'Updated the product successfully'})
 
 
     elif request.method == 'DELETE':
@@ -226,7 +283,7 @@ def product(request):
          product = Product.objects.filter(id=product_id).first()
          if product:
            product.deletedTime = datetime.now()
-           product.delete()
+           product.save()
      
          return JsonResponse({'message': 'Product deleted successfully'})
 
@@ -369,6 +426,8 @@ def search(request):
 
 
 #################################################################################################3
+
+
 
 
 
