@@ -7,7 +7,10 @@ from datetime import datetime
 from django.http import HttpResponse
 
 
-#############################################
+
+
+
+###################################-----TESTED REGISTER-------###############################################
     
 
 def register(request):
@@ -43,12 +46,8 @@ def register(request):
     
 
 
-   
 
-
-
-
-#######################################################################
+#######################################------TESTED LOGIN-------################################################
 
 
 
@@ -68,9 +67,7 @@ def login_view(request):
                     return JsonResponse({'login': 'admin', 'message': 'Login successful.'})
                 else:
                     response = JsonResponse({'login': 'user', 'message': 'Login successful.'})
-                    
-                    if request.is_secure():
-                       response.set_cookie('sessionid', 'your_session_id', secure=True)
+                
                     return response
     else:
         return JsonResponse("request not valid")
@@ -81,42 +78,46 @@ def login_view(request):
 
 
 
-###############################################################################################
+#####################################-----TESTED INVENTORY-------###############################################
+
 
 
 
 
 def inventory(request):
     if request.method == 'POST':
-        category = request.POST.get('category')
-        image = request.FILES.get('image')
-        uid = request.POST.get('uid')
-        ucategory = request.POST.get('ucategory')
-        uimage = request.FILES.get('uimage')
-        if category and image:
-         inventory = Inventory.objects.create(category=category, blob=image)
-         inventory.save()
-         return JsonResponse({'message': 'Category and image uploaded successfully'})
-        if uid:
-            inventory=Inventory.objects.filter(id=uid).first()
+        if request.user.is_authenticated and request.user.is_superuser:
+            category = request.POST.get('category')
+            image = request.FILES.get('image')
+            uid = request.POST.get(('uid'))
+            ucategory = request.POST.get('ucategory')
+            uimage = request.FILES.get('uimage')
+            
+            if category and image:
+                inventory = Inventory.objects.create(category=category, blob=image)
+                return JsonResponse({'message': 'Category and image uploaded successfully'})
+            
+            if uid:
+                inventory=Inventory.objects.filter(id=uid).first()
 
-            if inventory:
-             inventory.category = ucategory
+                if inventory:
+                 inventory.category = ucategory
 
-            if uimage:
-                inventory.blob = uimage
+                if uimage:
+                    inventory.blob = uimage
 
-            inventory.save()
-            return JsonResponse({'message': 'Category updated successfully'})
+                inventory.save()
+                return JsonResponse({'message': 'Category updated successfully'})
+            else:
+                return JsonResponse({'category_id':uid,'error': 'Inventory item not found'}, status=404)
         else:
-            return JsonResponse({'category_id':category_id,'error': 'Inventory item not found'}, status=404)
-
+            return JsonResponse({'error': 'Authentication required.'}, status=401)
 
 
        
 
     if request.method == 'GET':
-            if request.user.is_authenticated:
+            if request.user.is_authenticated and request.user.is_superuser:
                 categories = Inventory.objects.exclude(deletedTime__isnull=False)
 
                 category_data = [
@@ -130,46 +131,33 @@ def inventory(request):
 
                 return JsonResponse({'categories': category_data}, status=200)
             else:
-                return JsonResponse({'error': 'Authentication required.'}, status=401)
-      
+                return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
+          
 
 
-
-    # if request.method == 'PUT':
-    #     data = json.loads(request.body)
-    #     uid = data['ucategory_id']
-    #     ucategory = data['ucategory']
-    #     uimage = data['uimage']
-    #     inventory=Inventory.objects.filter(id=id).first()
-
-    #     if inventory:
-    #         inventory.category = category
-
-    #         if image:
-    #             inventory.blob = image
-
-    #         inventory.save()
-    #         return JsonResponse({'message': 'Category updated successfully'})
-    #     else:
-    #         return JsonResponse({'category_id':category_id,'error': 'Inventory item not found'}, status=404)
-
-    
 
 
     if request.method == 'DELETE':
-        category_id = request.GET.get('category_id')
+         if request.user.is_authenticated and request.user.is_superuser:
         
-        if category_id is not None:
-            inventory = Inventory.objects.filter(id=category_id).first()
+            category_id = request.GET.get('category_id')
             
-            if inventory:
-                inventory.deletedTime = datetime.now()
-                inventory.save()
-                return JsonResponse({'message': 'Category deleted successfully'})
+            if category_id is not None:
+                inventory = Inventory.objects.filter(id=category_id).first()
+                
+                if inventory:
+                    inventory.deletedTime = datetime.now()
+                    inventory.save()
+                    return JsonResponse({'message': 'Category deleted successfully'})
+                else:
+                    return JsonResponse({'message': 'Category not found'}, status=404)
             else:
-                return JsonResponse({'message': 'Category not found'}, status=404)
-        else:
-            return JsonResponse({'message': 'Invalid request data.'}, status=400)
+                return JsonResponse({'message': 'Invalid request data.'}, status=400)
+         else:
+             return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
+             
+
+
 
     return JsonResponse({'message': 'Invalid request method.'}, status=400)
 
@@ -179,56 +167,60 @@ def inventory(request):
 
 
 
-######################################################################################
+#################################--------TESTED PRODUCT------ #########################################################
 
 
 
 def product(request):
     if request.method == 'POST':
-        product_name = request.POST.get('productname')
-        price = request.POST.get('price')
-        category_id = request.POST.get('categoryid')
-        quantity = request.POST.get('quantity')
-        image = request.FILES.get('image')
-        uproduct_id = request.POST.get('uproduct_id')
-        uname = request.POST.get('uname')
-        uprice = request.POST.get('uprice')
-        uimage = request.FILES.get('uimage')
-        uquantity = request.POST.get('uquantity')
-        uproduct = request.POST.get('uproduct')
+        if request.user.is_authenticated and request.user.is_superuser:
+            product_name = request.POST.get('productname')
+            price = request.POST.get('price')
+            category_id = request.POST.get('categoryid')
+            quantity = request.POST.get('quantity')
+            image = request.FILES.get('image')
+            uproduct_id = request.POST.get('uproduct_id')
+            uname = request.POST.get('uname')
+            uprice = request.POST.get('uprice')
+            uimage = request.FILES.get('uimage')
+            uquantity = request.POST.get('uquantity')
+            uproduct = request.POST.get('uproduct')
 
-        category = Inventory.objects.filter(id=category_id).first()
+            category = Inventory.objects.filter(id=category_id).first()
 
-        if category:
-            new_product = Product.objects.create(
-                product=product_name,
-                price=price,
-                category=category,
-                blob=image,
-                quantity=quantity
-            )
-            return JsonResponse({'message': 'Registered Product successfully'})
+            if category:
+                new_product = Product.objects.create(
+                    product=product_name,
+                    price=price,
+                    category=category,
+                    blob=image,
+                    quantity=quantity
+                )
+                product = Product.objects.filter(product=product_name,price=price).first()
+                return JsonResponse({'productid':product.id,'message': 'Registered Product successfully'})
 
-        existing_product = Product.objects.filter(id=uproduct_id).first()
+            existing_product = Product.objects.filter(id=uproduct_id).first()
 
-        if not existing_product:
-            return JsonResponse({'message': 'Product does not exist'}, status=404)
+            if not existing_product:
+                return JsonResponse({'message': 'Product does not exist'}, status=404)
 
-        if uname:
-            existing_product.product = uname
-        if uprice:
-            existing_product.price = float(uprice)
-        if uquantity:
-            existing_product.quantity = int(uquantity)
-        if uimage:
-            existing_product.blob = uimage
-        if uproduct:
-            existing_product.product = uproduct
+            if uname:
+                existing_product.product = uname
+            if uprice:
+                existing_product.price = float(uprice)
+            if uquantity:
+                existing_product.quantity = int(uquantity)
+            if uimage:
+                existing_product.blob = uimage
+            if uproduct:
+                existing_product.product = uproduct
 
-        existing_product.save()
+            existing_product.save()
 
-        return JsonResponse({'message': 'Updated the product successfully'})
-    
+            return JsonResponse({'message': 'Updated the product successfully'})
+        else:
+            return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
+
 
 
 
@@ -245,10 +237,204 @@ def product(request):
                 for product in products
             ]
 
-            return JsonResponse({'cart': product_data}, status=200)
+            return JsonResponse({'product': product_data}, status=200)
         else:
             return JsonResponse({'error': 'Authentication required.'}, status=401)
         
+
+
+
+
+    elif request.method == 'DELETE':
+        if request.user.is_authenticated and request.user.is_superuser:
+            product_id = request.GET.get('product_id')
+            product = Product.objects.filter(id=product_id).first()
+            if product:
+             product.deletedTime = datetime.now()
+             product.save()
+        
+            return JsonResponse({'id':product_id,'message': 'Product deleted successfully'})
+        else:
+            return JsonResponse({'error': ' Authentication required.'}, status=401)
+
+    return JsonResponse({'message': 'Invalid request method.'}, status=400)
+
+
+
+
+
+#########################################---- CART-----#####################################################
+
+
+
+def cart(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = data.get('quantity')
+
+            user_id = request.user.id
+            product = Product.objects.filter(id=product_id).first()
+            productimg = Product.objects.filter(id=product_id).values('blob').first()
+
+            if product and productimg and product.quantity >= quantity:
+                cart = Cart.objects.create(
+                    user_id=user_id,
+                    product=product,
+                    totalprice=product.price * quantity,
+                    quantity=quantity,
+                    image=productimg['blob'],
+                )
+                return JsonResponse({'message': 'Product added to cart successfully'})
+            else:
+                return JsonResponse({'error': 'Product not found or insufficient quantity'}, status=400)
+        else:
+            return JsonResponse({'error': 'authentication required'}, status=401)
+    
+
+
+
+
+    if request.method == 'GET':
+        if request.user.is_authenticated:
+            user_id = request.user.id
+            cproducts = Cart.objects.filter(id=user_id).first()
+            cart_data = [
+                {
+                    'quantity': cproduct.quantity,
+                    'product': cproduct.product,
+                    'image': cproduct.image.url if cproduct.image else None,
+                    'id' : cproducts.id
+                      }
+                for cproduct in cproducts]
+            return JsonResponse({'products': cart_data}, status=200)
+        else:
+             return JsonResponse({'error': 'authentication required.'}, status=401)
+        
+
+
+
+
+
+
+    if request.method == 'PUT':
+      if request.user.is_authenticated:
+        cart_id = data.get('cart_id')
+        quantity = data.get('quantity')
+        cart = Cart.objects.filter(id=cart_id).first()
+        if cart:
+            cart.quantity = quantity
+            return JsonResponse({'message':'updated cart successfully'})
+      else:
+             return JsonResponse({'error': 'authentication required.'}, status=401)
+        
+
+
+
+    if request.method == 'DELETE':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            cart_id = data.get('cart_id')
+            cart = Cart.objects.filter(id=cart_id).first()
+            if cart:
+                    cart.deletedTime = datetime.now()
+                    cart.save()
+                    return JsonResponse({'message': 'Cart Product deleted successfully'})
+            else:
+                return JsonResponse({'message': 'Cart Product not found'}, status=404)
+        else:
+             return JsonResponse({'error': 'authentication required.'}, status=401)
+        
+
+    return JsonResponse({'message': 'Invalid request method.'}, status=400)
+
+
+
+
+
+################################-----TESTED BUY----######################################################
+
+
+
+
+def buy(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = data.get('quantity')
+
+        
+            product = Product.objects.filter(id=product_id).first()
+
+            if product.quantity >= quantity:
+                product.quantity -= quantity
+                product.save()
+
+                buy = Buy.objects.create(productid=product, quantity=quantity, billtotal=product.price * quantity)
+
+                return JsonResponse({'billtotal':product.price * quantity,'message': 'Purchase successful'})
+            else:
+                return JsonResponse({'error': 'Insufficient quantity available for purchase.'}, status=400)
+        else:
+            return JsonResponse({'error': 'authentication required'}, status=401)
+
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
+
+
+
+#####################################-----TESTED SEARCH-----####################################################################
+
+
+
+
+
+def search(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            data = json.loads(request.body)
+            search = data.get('search')  
+            pricemax = data.get('pricemax')
+            pricemin = data.get('pricemin')
+            
+            if search is not None:
+                products = Product.objects.filter(product=search).values('product', 'price', 'blob')
+                return JsonResponse({'message': 'search result', 'products': list(products)}, status=200)
+            elif pricemax is not None or pricemin is not None: 
+                products = Product.objects.filter(price__range=(pricemin, pricemax)).values('product', 'price', 'blob')
+                if products:
+                    return JsonResponse({'message': 'search result', 'products': list(products)}, status=200)
+                else:
+                    return JsonResponse({'message': 'No results found'}, status=200)
+            else:
+                return JsonResponse({'message': 'Invalid price range and search'}, status=400)
+        else:
+            return JsonResponse({'error': 'authentication required'}, status=401)
+
+    else:
+        return JsonResponse({'message': 'Invalid request method'}, status=400)
+    
+
+
+
+
+
+
+
+
+
+#################################################################################################3
+
+
+
+
+
+
+###########-----PUT OF PRODUCTS------#######
 
 
     # if request.method == 'PUT':
@@ -277,183 +463,46 @@ def product(request):
     #     return JsonResponse({'product_id': product_id, 'message': 'Updated the product successfully'})
 
 
-    elif request.method == 'DELETE':
-         
-         product_id = request.POST.get('product_id')
-         product = Product.objects.filter(id=product_id).first()
-         if product:
-           product.deletedTime = datetime.now()
-           product.save()
-     
-         return JsonResponse({'message': 'Product deleted successfully'})
 
 
-    return JsonResponse({'message': 'Invalid request method.'}, status=400)
 
+#####--PUT OF INVENTORY------####
 
 
+ # if request.method == 'PUT':
+    #     data = json.loads(request.body)
+    #     uid = data['ucategory_id']
+    #     ucategory = data['ucategory']
+    #     uimage = data['uimage']
+    #     inventory=Inventory.objects.filter(id=id).first()
 
+    #     if inventory:
+    #         inventory.category = category
 
-#####################################################################################
+    #         if image:
+    #             inventory.blob = image
 
+    #         inventory.save()
+    #         return JsonResponse({'message': 'Category updated successfully'})
+    #     else:
+    #         return JsonResponse({'category_id':category_id,'error': 'Inventory item not found'}, status=404)
 
 
 
-def cart(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        user_id = data.get('user_id')
-        product_id = data.get('product_id')
-        quantity = data.get('quantity')
-        auth_user = authenticate(request, username=User.username, password=User.password)
-        if auth_user is not None:
-                login(request, auth_user)
-                
-        product = Product.objects.filter(id=product_id).first()
-        if product.quantity >= quantity:
-            cart, created = Cart.objects.get_or_create(user_id=user_id, product=product,totalprice=product.price * quantity)
-            cart.quantity = quantity
-            cart.save()
-            return JsonResponse({'message': 'Product added to cart successfully'})
-    
+##########################################################
 
 
-    if request.method == 'GET':
-        if request.user.is_authenticated:
+# def inventory_image_upload(request):
+#     if request.method == 'POST':
+#         category = request.POST.get('category')
+#         image = request.FILES.get('blob')
 
-            cproducts = Cart.objects.all()
-
-            cart_data = [
-                {
-                    'quantity': cproduct.quantity,
-                    'product': cproduct.product,
-                   # 'image': product.blob,
-                }
-                for cproduct in cproducts
-            ]
-
-            return JsonResponse({'products': cart_data}, status=200)
-        else:
-            return JsonResponse({'error': 'Authentication required.'}, status=401)
-        
-
-    if request.method == 'PUT':
-      cart_id = data.get('cart_id')
-      quantity = data.get('quantity')
-      cart = Cart.objects.filter(id=cart_id).first()
-      if cart:
-        cart.quantity = quantity
-        return JsonResponse({'message':'updated cart successfully'})
-        
-
-    if request.method == 'DELETE':
-         
-        data = json.loads(request.body)
-        cart_id = data.get('cart_id')
-        cart = Cart.objects.filter(id=cart_id).first()
-        if cart:
-                cart.deletedTime = datetime.now()
-                cart.save()
-     
-         
-                return JsonResponse({'message': 'Cart Product deleted successfully'})
-        else:
-                return JsonResponse({'message': 'Cart Product not found'}, status=404)
-
-
-    return JsonResponse({'message': 'Invalid request method.'}, status=400)
-
-
-
-
-
-######################################################################################
-
-
-
-
-def buy(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        product_id = data.get('product_id')
-        quantity = data.get('quantity')
-
-       
-        product = Product.objects.filter(id=product_id).first()
-
-        if product.quantity >= quantity:
-            product.quantity -= quantity
-            product.save()
-
-            buy = Buy.objects.create(productid=product, quantity=quantity, billtotal=product.price * quantity)
-
-            return JsonResponse({'billtotal':product.price * quantity,'message': 'Purchase successful'})
-        else:
-            return JsonResponse({'error': 'Insufficient quantity available for purchase.'}, status=400)
-
-    return JsonResponse({'error': 'Invalid request method.'}, status=400)
-
-
-
-
-
-###########################################################################################################
-
-
-
-
-
-def search(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        search = data.get('search')  
-        pricemax = data.get('pricemax')
-        pricemin = data.get('pricemin')
-        
-        if search is not None:
-            products = Product.objects.filter(product=search).values('product', 'price', 'blob')
-            return JsonResponse({'message': 'search result', 'products': list(products)}, status=200)
-        elif pricemax is not None or pricemin is not None:  # Use 'or' instead of 'and'
-            products = Product.objects.filter(price__range=(pricemin, pricemax)).values('product', 'price', 'blob')
-            if products:
-                return JsonResponse({'message': 'search result', 'products': list(products)}, status=200)
-            else:
-                return JsonResponse({'message': 'No results found'}, status=200)
-        else:
-            return JsonResponse({'message': 'Invalid price range and search'}, status=400)
-    else:
-        return JsonResponse({'message': 'Invalid request method'}, status=400)
-
-
-#################################################################################################3
-
-
-
-
-
-def inventory_image_upload(request):
-    if request.method == 'POST':
-        category = request.POST.get('category')
-        image = request.FILES.get('blob')
-
-        if category and image:
-            inventory = Inventory(category=category, blob=image)
-            inventory.save()
-            return JsonResponse({"message": "Image uploaded successfully."}, status=201)
-        else:
-            return JsonResponse({"message": "Missing category or image data."}, status=400)
-
-
-
-
-
-
-
-
-
-
-
-
+#         if category and image:
+#             inventory = Inventory(category=category, blob=image)
+#             inventory.save()
+#             return JsonResponse({"message": "Image uploaded successfully."}, status=201)
+#         else:
+#             return JsonResponse({"message": "Missing category or image data."}, status=400)
 
 
 
