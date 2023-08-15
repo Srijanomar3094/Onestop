@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from .models import Inventory, Product, Buy, Cart 
 from datetime import datetime
 from django.http import HttpResponse
+from django.core.mail import send_mail
 
 
 
@@ -24,6 +25,7 @@ def register(request):
 
      if not (username and password and first_name and last_name and email):
         return JsonResponse({'error': 'Invalid registration details.'}, status=400)
+     
 
      if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
         return JsonResponse({'error': 'Username or email already exists.'}, status=400)
@@ -35,6 +37,12 @@ def register(request):
         last_name=last_name,
         email=email
      )
+     send_mail(
+                        'Registration Successful',
+                        'Your registration for Onestop grocery shopping app is succesfull you can now shop any grocery product from wide range of varities available at Onestop .Happy shopping:) ',
+                        'srijanomar5840@gmail.com',
+                        ['omarsrijan3094@gmail.com'],
+                        fail_silently=False,)
      return JsonResponse({'message': 'Registration successfull !!'},status=200)
 
     else:
@@ -65,6 +73,8 @@ def login_view(request):
                 login(request, auth_user)
                 if auth_user.is_superuser and auth_user.is_staff:
                     return JsonResponse({'login': 'admin', 'message': 'Login successful.'})
+
+
                 else:
                     response = JsonResponse({'login': 'user', 'message': 'Login successful.'})
                 
@@ -179,12 +189,13 @@ def product(request):
             category_id = request.POST.get('categoryid')
             quantity = request.POST.get('quantity')
             image = request.FILES.get('image')
-            uproduct_id = request.POST.get('uproduct_id')
-            uname = request.POST.get('uname')
-            uprice = request.POST.get('uprice')
-            uimage = request.FILES.get('uimage')
-            uquantity = request.POST.get('uquantity')
-            uproduct = request.POST.get('uproduct')
+            description = request.POST.get('description')
+            # uproduct_id = request.POST.get('uproduct_id')
+            # uname = request.POST.get('uname')
+            # uprice = request.POST.get('uprice')
+            # uimage = request.FILES.get('uimage')
+            # uquantity = request.POST.get('uquantity')
+            # uproduct = request.POST.get('uproduct')
 
             category = Inventory.objects.filter(id=category_id).first()
 
@@ -194,30 +205,31 @@ def product(request):
                     price=price,
                     category=category,
                     blob=image,
-                    quantity=quantity
+                    quantity=quantity,
+                    description=description
                 )
                 product = Product.objects.filter(product=product_name,price=price).first()
                 return JsonResponse({'productid':product.id,'message': 'Registered Product successfully'})
 
-            existing_product = Product.objects.filter(id=uproduct_id).first()
+            # existing_product = Product.objects.filter(id=uproduct_id).first()
 
-            if not existing_product:
-                return JsonResponse({'message': 'Product does not exist'}, status=404)
+            # if not existing_product:
+            #     return JsonResponse({'message': 'Product does not exist'}, status=404)
 
-            if uname:
-                existing_product.product = uname
-            if uprice:
-                existing_product.price = float(uprice)
-            if uquantity:
-                existing_product.quantity = int(uquantity)
-            if uimage:
-                existing_product.blob = uimage
-            if uproduct:
-                existing_product.product = uproduct
+            # if uname:
+            #     existing_product.product = uname
+            # if uprice:
+            #     existing_product.price = float(uprice)
+            # if uquantity:
+            #     existing_product.quantity = int(uquantity)
+            # if uimage:
+            #     existing_product.blob = uimage
+            # if uproduct:
+            #     existing_product.product = uproduct
 
-            existing_product.save()
+            # existing_product.save()
 
-            return JsonResponse({'message': 'Updated the product successfully'})
+            # return JsonResponse({'message': 'Updated the product successfully'})
         else:
             return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
 

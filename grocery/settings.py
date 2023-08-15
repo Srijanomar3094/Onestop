@@ -178,6 +178,19 @@ SESSION_COOKIE_HTTPONLY = True
 
 
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'gmail.com'  # Replace with your SMTP server's address
+EMAIL_PORT = 587  # Replace with the appropriate port for your SMTP server
+EMAIL_USE_TLS = True  # Use TLS encryption
+EMAIL_HOST_USER = 'srijanomar5840@gmail.com'  # Replace with your email address
+EMAIL_HOST_PASSWORD = 'omar@3094'  # Replace with your email password
+
+# Default "from" address for sending emails
+DEFAULT_FROM_EMAIL = 'srijanomar5840@gmail.com'
+
+
+
+
 
 
 
