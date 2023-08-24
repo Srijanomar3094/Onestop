@@ -1,4 +1,4 @@
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate,logout
 from django.http import JsonResponse
 import json
 from django.contrib.auth.models import User
@@ -79,7 +79,27 @@ def login_view(request):
     
 
 
-   
+   ##################################------LOGOUT------#################################################
+
+
+def logout_view(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated or request.user.is_staff or request.user.is_superuser:
+            logout(request)
+            response = JsonResponse({'message': 'Logout successful.'})
+            return response
+        else:
+            return JsonResponse({'message': 'User is not authenticated.'})
+    else:
+        return JsonResponse({'message': 'Request not valid'})
+
+
+
+
+
+
+
+
 
 
 
