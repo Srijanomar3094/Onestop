@@ -31,7 +31,7 @@ class Cart(models.Model):
     deletedTime = models.DateTimeField(null=True, default=None)
     buystatus = models.BooleanField(default=False)
     totalprice = models.IntegerField(default=1)
-    image = models.ImageField(upload_to='onestop/grocery/inventory/',default=None)
+    image = models.ImageField(upload_to='',default=None)
 
 
 class Buy(models.Model):
