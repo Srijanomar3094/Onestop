@@ -7,7 +7,7 @@ class Inventory(models.Model):
     createdTime = models.DateTimeField(auto_now_add=True, null=True)
     updatedTime = models.DateTimeField(auto_now=True, null=True)
     deletedTime = models.DateTimeField(null=True, default=None)
-    blob = models.ImageField(upload_to='onestop/grocery/inventory/')
+    blob = models.ImageField(upload_to='')
 
 
 class Product(models.Model):
@@ -18,7 +18,7 @@ class Product(models.Model):
     createdTime = models.DateTimeField(auto_now_add=True, null=True)
     updatedTime = models.DateTimeField(auto_now=True, null=True)
     deletedTime = models.DateTimeField(null=True, default=None)
-    blob = models.ImageField(upload_to='onestop/grocery/inventory/')
+    blob = models.ImageField(upload_to='')
     quantity = models.IntegerField(default=1)
 
 
@@ -31,7 +31,7 @@ class Cart(models.Model):
     deletedTime = models.DateTimeField(null=True, default=None)
     buystatus = models.BooleanField(default=False)
     totalprice = models.IntegerField(default=1)
-    image = models.ImageField(upload_to='onestop/grocery/inventory/',default=None)
+    image = models.ImageField(upload_to='',default=None)
 
 
 class Buy(models.Model):

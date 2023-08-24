@@ -1,11 +1,11 @@
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate,logout
 from django.http import JsonResponse
 import json
 from django.contrib.auth.models import User
 from .models import Inventory, Product, Buy, Cart 
 from datetime import datetime
 from django.http import HttpResponse
-from django.core.mail import send_mail
+#from django.core.mail import send_mail
 
 
 
@@ -14,6 +14,7 @@ from django.core.mail import send_mail
 ###################################-----TESTED REGISTER-------###############################################
     
 
+    
 def register(request):
     if request.method == 'POST':
      data = json.loads(request.body)
@@ -25,7 +26,6 @@ def register(request):
 
      if not (username and password and first_name and last_name and email):
         return JsonResponse({'error': 'Invalid registration details.'}, status=400)
-     
 
      if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
         return JsonResponse({'error': 'Username or email already exists.'}, status=400)
@@ -37,18 +37,13 @@ def register(request):
         last_name=last_name,
         email=email
      )
-     send_mail(
-                        'Registration Successful',
-                        'Your registration for Onestop grocery shopping app is succesfull you can now shop any grocery product from wide range of varities available at Onestop .Happy shopping:) ',
-                        'srijanomar5840@gmail.com',
-                        ['omarsrijan3094@gmail.com'],
-                        fail_silently=False,)
+        #send_mail(
+        #                     'Registration Successful',
+        #                     'Your registration for Onestop grocery shopping app is succesfull you can now shop any grocery product from wide range of varities available at Onestop .Happy shopping:) ',
+        #                     'srijanomar5840@gmail.com',
+        #                     ['omarsrijan3094@gmail.com'],
+        #     
      return JsonResponse({'message': 'Registration successfull !!'},status=200)
-
-    else:
-        return JsonResponse({'error': 'Invalid request method.'}, status=400)
-    
-
 
   
     
@@ -80,11 +75,31 @@ def login_view(request):
                 
                     return response
     else:
-        return JsonResponse("request not valid")
+        return JsonResponse({'message':'Request not valid'})
     
 
 
-   
+   ##################################------LOGOUT------#################################################
+
+
+def logout_view(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated or request.user.is_staff or request.user.is_superuser:
+            logout(request)
+            response = JsonResponse({'message': 'Logout successful.'})
+            return response
+        else:
+            return JsonResponse({'message': 'User is not authenticated.'})
+    else:
+        return JsonResponse({'message': 'Request not valid'})
+
+
+
+
+
+
+
+
 
 
 
@@ -126,23 +141,33 @@ def inventory(request):
 
        
 
+    # if request.method == 'GET':
+    #         if request.user.is_authenticated and request.user.is_superuser:
+    #             categories = Inventory.objects.exclude(deletedTime__isnull=False)
+
+    #             category_data = [
+    #                 {
+    #                     'id': category.id,
+    #                     'product': category.category,
+    #                     'image': category.blob if category.blob else None,
+    #                 }
+    #                 for category in categories
+    #             ]
+
+    #             return JsonResponse({'categories': category_data}, status=200)
+    #         else:
+    #             return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
     if request.method == 'GET':
-            if request.user.is_authenticated and request.user.is_superuser:
-                categories = Inventory.objects.exclude(deletedTime__isnull=False)
-
-                category_data = [
-                    {
-                        'id': category.id,
-                        'product': category.category,
-                        'image': category.blob.url if category.blob else None,
-                    }
-                    for category in categories
-                ]
-
-                return JsonResponse({'categories': category_data}, status=200)
-            else:
-                return JsonResponse({'error': 'Admin Authentication required.'}, status=401)
-          
+        if request.user.is_authenticated and request.user.is_superuser:
+        
+            category=list(Inventory.objects.values('id','category','blob'))
+            return JsonResponse(category,safe=False)
+        if request.user.is_authenticated:
+        
+            category=list(Inventory.objects.values('id','category','blob'))
+            return JsonResponse(category,safe=False)
+        else:
+            return JsonResponse({'error': 'Admin Authentication required.'}, status=401)     
 
 
 
@@ -236,23 +261,76 @@ def product(request):
 
 
 
+    # if request.method == 'GET':
+    #     if request.user.is_authenticated:
+    #         products = Product.objects.exclude(deletedTime__isnull=False)
+
+                 
+    #         product_data = list(products.values('id', 'product', image=product('blob') if product('blob') else None))
+    #         return JsonResponse({'product': product_data}, status=200)
+
+    #     else:
+    #         return JsonResponse({'error': 'Authentication required.'}, status=401)
+    #     from django.db.models import Case, Value, When, F
+
+    # if request.method == 'GET':
+    #     if request.user.is_authenticated:
+    #         products = Product.objects.exclude(deletedTime__isnull=False)
+
+    #         product_data = list(
+    #             products.annotate(
+    #                 image=Case(
+    #                     When(blob__isnull=False, then=F('blob')),
+    #                     default=Value(None),
+    #                     output_field=ImageField(),  # Replace ImageField with your field's actual type
+    #                 )
+    #             ).values('id', 'product', 'image')
+    #         )
+
+    #         return JsonResponse({'product': product_data}, status=200)
+
+    #     else:
+    #         return JsonResponse({'error': 'Authentication required.'}, status=401)
+    #     def get_category(request):
+
     if request.method == 'GET':
-        if request.user.is_authenticated:
-            products = Product.objects.exclude(deletedTime__isnull=False)
-
-            product_data = [
-                {
-                    'id': product.id,
-                    'product': product.product,
-                    'image': product.blob.url if product.blob else None,
-                }
-                for product in products
-            ]
-
-            return JsonResponse({'product': product_data}, status=200)
+        category_id = request.GET.get('categoryid') 
+         
+        if request.user.is_authenticated and request.user.is_superuser:
+            products = list(Product.objects.values('id', 'product', 'blob', 'description', 'price', 'quantity'))
+            return JsonResponse(products, safe=False)
+        elif request.user.is_authenticated:
+            if category_id:
+                products = list(Product.objects.filter(category_id=category_id).values('id', 'product', 'blob', 'description', 'price'))
+                return JsonResponse(products, safe=False)
+            else:
+                products = list(Product.objects.values('id', 'product', 'blob', 'description', 'price'))
+                return JsonResponse(products, safe=False)
         else:
             return JsonResponse({'error': 'Authentication required.'}, status=401)
+
         
+       
+    
+        # product_data = [
+            #     {
+            #         'id': product.id,
+            #         'product': product.product,
+            #         #'image': product.blob.url if product.blob else None,
+            #         'image': product.blob, if product.blob else None,
+            #     }
+            #     for product in products
+            # ]
+
+            # return JsonResponse({'product': product_data}, status=200)
+#             product_data = [
+#     {
+#         'id': product.id,
+#         'product': product.product,
+#         'image': product.blob if product.blob else None,
+#     }
+#     for product in products
+# ] 
 
 
 
@@ -283,8 +361,8 @@ def cart(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
             data = json.loads(request.body)
-            product_id = data.get('product_id')
-            quantity = data.get('quantity')
+            product_id = data.get('id')
+           # quantity = data.get('quantity')
 
             user_id = request.user.id
             product = Product.objects.filter(id=product_id).first()
