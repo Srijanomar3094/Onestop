@@ -361,19 +361,20 @@ def cart(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
             data = json.loads(request.body)
-            product_id = data.get('id')
+            product_id = data
+            #product_id = data.get('id')
            # quantity = data.get('quantity')
 
             user_id = request.user.id
             product = Product.objects.filter(id=product_id).first()
             productimg = Product.objects.filter(id=product_id).values('blob').first()
 
-            if product and productimg and product.quantity >= quantity:
+            if product and productimg: #product.quantity >= quantity:
                 cart = Cart.objects.create(
                     user_id=user_id,
                     product=product,
-                    totalprice=product.price * quantity,
-                    quantity=quantity,
+                    #totalprice=product.price * quantity,
+                    #quantity=quantity,
                     image=productimg['blob'],
                 )
                 return JsonResponse({'message': 'Product added to cart successfully'})
@@ -388,16 +389,9 @@ def cart(request):
 
     if request.method == 'GET':
         if request.user.is_authenticated:
-            user_id = request.user.id
-            cproducts = Cart.objects.filter(id=user_id).first()
-            cart_data = [
-                {
-                    'quantity': cproduct.quantity,
-                    'product': cproduct.product,
-                    'image': cproduct.image.url if cproduct.image else None,
-                    'id' : cproducts.id
-                      }
-                for cproduct in cproducts]
+            userid = request.user.id
+            
+            cart_data = list(Cart.objects.filter(user_id=userid).values('quantity','image','totalprice','product__product'))
             return JsonResponse({'products': cart_data}, status=200)
         else:
              return JsonResponse({'error': 'authentication required.'}, status=401)
